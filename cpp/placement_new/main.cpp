@@ -21,11 +21,8 @@ class MyClass {
 };
 
 int main() {
-  alignas(MyClass) unsigned char* buf;
-
   size_t objects_size = 2;
-  buf = new unsigned char[objects_size * sizeof(MyClass)];
-  MyClass* objects = reinterpret_cast<MyClass*>(buf);
+  MyClass* objects = reinterpret_cast<MyClass*>(new unsigned char[objects_size * sizeof(MyClass)]);
 
   new(&objects[0]) MyClass("name0", 0.123);
   new(&objects[1]) MyClass("name1", 456.789);
@@ -38,5 +35,5 @@ int main() {
     objects[i].~MyClass();
   }
 
-  delete [] buf;
+  delete [] reinterpret_cast<unsigned char*>(objects);
 }

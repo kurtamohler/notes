@@ -5,8 +5,8 @@
 // function to call when the refcount goes to 0.
 //
 // In this example, we don't need to modify how `UniqueVoidPtr` works. We can
-// continue using `DeleterFnPtr = void (*)(void*)`. We wouldn't be changing
-// it a functional object for the deleter. I'm not sure if that's really a good
+// continue using `DeleterFnPtr = void (*)(void*)`. We wouldn't need to change
+// the deleter to be a callable object. I'm not sure if that's really a good
 // thing or not though, since this example isn't very type safe.
 
 #include <memory>

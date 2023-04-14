@@ -67,14 +67,18 @@ class UniqueVoidPtr {
 };
 
 int main() {
-  UniqueVoidPtr ptr1((void*)1, (void*)1, &example_cpu_deleter);
+  void* buffer1 = (void*)1;
+
+  // This is currently how `UniqueVoidPtr`s within `DataPtr` are created
+  UniqueVoidPtr ptr1(buffer1, buffer1, &example_cpu_deleter);
   ptr1.clear();
 
   std::cout << "----------------------" << std::endl;
 
+  void* buffer2 = (void*)2;
   // I think the context has to be created on the heap like this so that
   // `refcounted_deleter` can delete the context when refcount goes to 0
-  RefcountedDeleterContext* refcount_ctx = new RefcountedDeleterContext((void*)2, &example_cpu_deleter);
+  RefcountedDeleterContext* refcount_ctx = new RefcountedDeleterContext(buffer2, &example_cpu_deleter);
   UniqueVoidPtr ptr2(refcount_ctx->ptr, (void*)refcount_ctx, &refcounted_deleter);
   
   // Create a second UniqueVoidptr that points to the same data

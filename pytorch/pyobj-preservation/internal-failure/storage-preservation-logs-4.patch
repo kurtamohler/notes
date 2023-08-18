@@ -1,0 +1,295 @@
+diff --git a/tools/autograd/templates/python_variable_methods.cpp b/tools/autograd/templates/python_variable_methods.cpp
+index 1be745e5dd4..db3c83e9ebd 100644
+--- a/tools/autograd/templates/python_variable_methods.cpp
++++ b/tools/autograd/templates/python_variable_methods.cpp
+@@ -959,13 +959,18 @@ static PyObject * THPVariable_new_tensor(PyObject* self, PyObject* args, PyObjec
+   END_HANDLE_TH_ERRORS
+ }
+ 
++#define FILE_AND_LINE() (std::string("[") +__FILE__ + ":" + std::to_string(__LINE__) + "]")
++
+ static PyObject * THPVariable_storage(PyObject* self, PyObject* arg)
+ {
+   HANDLE_TH_ERRORS
++  std::cout << FILE_AND_LINE() << " (tensor PyObject: " << self << ") in THPVariable_storage" << std::endl;
+   if (check_has_torch_function(self)) {
+     return handle_torch_function(self, "untyped_storage");
+   }
+   auto& self_ = THPVariable_Unpack(self);
++
++  std::cout << FILE_AND_LINE() << " (tensor PyObject: " << self << ") storage data: " << self_.storage().data() << std::endl;
+   return createPyObject(self_.storage());
+   END_HANDLE_TH_ERRORS
+ }
+diff --git a/torch/csrc/DynamicTypes.cpp b/torch/csrc/DynamicTypes.cpp
+index cb850987578..84aaa6efb85 100644
+--- a/torch/csrc/DynamicTypes.cpp
++++ b/torch/csrc/DynamicTypes.cpp
+@@ -10,6 +10,7 @@
+ #include <torch/csrc/utils/cuda_enabled.h>
+ #include <torch/csrc/utils/cuda_lazy_init.h>
+ #include <torch/csrc/utils/object_ptr.h>
++#include <torch/csrc/PyInterpreter.h>
+ 
+ #include <ATen/ATen.h>
+ #include <ATen/FunctionalStorageImpl.h>
+@@ -22,6 +23,8 @@
+ #include <unordered_map>
+ #include <vector>
+ 
++#define FILE_AND_LINE() (std::string("[") +__FILE__ + ":" + std::to_string(__LINE__) + "]")
++
+ namespace torch {
+ namespace {
+ std::array<THPDtype*, static_cast<int>(at::ScalarType::NumOptions)>
+@@ -57,6 +60,8 @@ THPLayout* getTHPLayout(at::Layout layout) {
+ }
+ 
+ PyObject* createPyObject(const at::Storage& storage) {
++  const void* const storage_data = storage.data();
++  std::cout << FILE_AND_LINE() << " (" << storage_data << ", interpreter: " << getPyInterpreter() << ") in createPyObject" << std::endl;
+   if (storage.device_type() != at::DeviceType::Meta &&
+       storage.data() == nullptr && storage.sym_nbytes() != 0 &&
+       // Grabbing storage() from FunctionalTensorWrapper is allowed.
+@@ -70,6 +75,9 @@ PyObject* createPyObject(const at::Storage& storage) {
+   PyObject* obj = THPStorage_Wrap(storage);
+   if (!obj)
+     throw python_error();
++  const char* type_name = Py_TYPE(obj)->tp_name;
++  std::cout << FILE_AND_LINE() << " (" << storage_data << ") type_name: " << type_name << ", PyObject*: " << obj << std::endl;
++  TORCH_CHECK(THPStorage_Check(obj), "Expected a storage type, but got ", type_name);
+   return obj;
+ }
+ 
+diff --git a/torch/csrc/Storage.cpp b/torch/csrc/Storage.cpp
+index 1652d4d0921..e96790d5fa0 100644
+--- a/torch/csrc/Storage.cpp
++++ b/torch/csrc/Storage.cpp
+@@ -31,11 +31,16 @@ void THPPointer<c10::StorageImpl>::free() {
+ 
+ PyTypeObject* THPStorageClass = nullptr;
+ 
++
++#define FILE_AND_LINE() (std::string("[") +__FILE__ + ":" + std::to_string(__LINE__) + "]")
++
+ PyObject* THPStorage_NewWithStorage(
+     PyTypeObject* type,
+     c10::Storage _storage,
+     c10::impl::PyInterpreterStatus status,
+     bool allow_preexisting_pyobj) {
++  const void* const storage_data = _storage.data();
++  std::cout << FILE_AND_LINE() << " (" << storage_data << ", interpreter: " << getPyInterpreter() << ") in THPStorage_NewWithStorage, arg type->tp_name: " << type->tp_name << std::endl;
+   TORCH_CHECK(
+       PyType_IsSubtype(type, &THPStorageType),
+       "Creating a Storage subclass from a class that does not inherit from ",
+@@ -44,6 +49,13 @@ PyObject* THPStorage_NewWithStorage(
+   auto maybe_pyobj = _storage.unsafeGetStorageImpl()->pyobj_slot()->check_pyobj(
+       getPyInterpreter());
+   if (maybe_pyobj.has_value() && maybe_pyobj.value()) {
++    PyObject* pyobj = *maybe_pyobj;
++
++    std::cout << FILE_AND_LINE() << " (" << storage_data << "), PyObjectSlot points to PyObject at " << pyobj << std::endl;
++    const char* pyobj_type_name = Py_TYPE(pyobj)->tp_name;
++    std::cout << FILE_AND_LINE() << " (" << storage_data << "), PyObjectSlot's PyObject type: " << pyobj_type_name << std::endl;
++    TORCH_CHECK(THPStorage_Check(pyobj), "Expected a storage type, but got ", pyobj_type_name);
++
+     TORCH_CHECK(
+         allow_preexisting_pyobj,
+         "Creating a new Storage subclass ",
+@@ -65,9 +77,12 @@ PyObject* THPStorage_NewWithStorage(
+     return THPStorage_Wrap(std::move(_storage));
+   }
+ 
++  std::cout << FILE_AND_LINE() << " (" << storage_data << "), creating PyObject of type " << type->tp_name << std::endl;
+   PyObject* obj = type->tp_alloc(type, 0);
+   TORCH_CHECK(obj, "Failed to allocate a ", type->tp_name, " object");
+ 
++  std::cout << FILE_AND_LINE() << " (" << storage_data << "), created storage PyObject of type " << type->tp_name << " at " << obj << std::endl;
++
+   auto s = (THPStorage*)obj;
+ 
+   new (&s->cdata) c10::MaybeOwned<c10::Storage>();
+@@ -75,9 +90,12 @@ PyObject* THPStorage_NewWithStorage(
+   s->cdata = c10::MaybeOwned<c10::Storage>::owned(std::move(_storage));
+ 
+   if (!c10::impl::HermeticPyObjectTLS::get_state()) {
++    std::cout << FILE_AND_LINE() << " (" << storage_data << "), not hermetic" << std::endl;
+     const auto& storage = THPStorage_Unpack(s);
+     storage.unsafeGetStorageImpl()->pyobj_slot()->init_pyobj(
+         getPyInterpreter(), obj, status);
++  } else {
++    std::cout << FILE_AND_LINE() << " (" << storage_data << "), hermetic" << std::endl;
+   }
+ 
+   return obj;
+@@ -85,8 +103,11 @@ PyObject* THPStorage_NewWithStorage(
+ 
+ // Wraps the c10::Storage with a storage PyObject
+ PyObject* THPStorage_Wrap(c10::Storage storage) {
++  const void* const storage_data = storage.data();
++  std::cout << FILE_AND_LINE() << " (" << storage_data << ", interpreter: " << getPyInterpreter() << ") in THPStorage_Wrap" << std::endl;
+   c10::StorageImpl* storage_impl = storage.unsafeGetStorageImpl();
+   if (c10::impl::HermeticPyObjectTLS::get_state()) {
++    std::cout << FILE_AND_LINE() << " (" << storage_data << ") hermetic" << std::endl;
+     return THPStorage_NewWithStorage(
+         THPStorageClass,
+         std::move(storage),
+@@ -100,6 +121,7 @@ PyObject* THPStorage_Wrap(c10::Storage storage) {
+   // NOTE: This is only supposed to happen in MultiPy
+   if (pyobj_slot->has_pyobj() &&
+       !pyobj_slot->check_interpreter(getPyInterpreter())) {
++    std::cout << FILE_AND_LINE() << " (" << storage_data << ") PyObject managed by different interpreter" << std::endl;
+     return THPStorage_NewWithStorage(
+         THPStorageClass,
+         c10::newStorageImplFromRefcountedDataPtr(storage),
+@@ -109,23 +131,37 @@ PyObject* THPStorage_Wrap(c10::Storage storage) {
+       pyobj_slot->check_pyobj(getPyInterpreter());
+   c10::impl::PyInterpreterStatus status;
+   if (maybe_pyobj.has_value()) {
++    std::cout << FILE_AND_LINE() << " (" << storage_data << ") has PyObject" << std::endl;
+     auto obj = *maybe_pyobj;
+     if (obj) {
++      std::cout << FILE_AND_LINE() << " (" << storage_data << ") PyObjectSlot points to PyObject at " << obj << std::endl;
++      const char* pyobj_type_name = Py_TYPE(obj)->tp_name;
++      std::cout << FILE_AND_LINE() << " (" << storage_data << ") PyObjectSlot's PyObject type: " << pyobj_type_name << std::endl;
++      TORCH_CHECK(THPStorage_Check(obj), "Expected a storage type, but got ", pyobj_type_name);
++
+       if (pyobj_slot->owns_pyobj()) {
++        std::cout << FILE_AND_LINE() << " (" << storage_data << ") PyObject was preserved, resurrecting" << std::endl;
++
++
+         pyobj_slot->set_owns_pyobj(false);
+         reinterpret_cast<THPStorage*>(obj)->cdata =
+             c10::MaybeOwned<c10::Storage>::owned(std::move(storage));
+         return obj;
+       } else {
++        std::cout << FILE_AND_LINE() << " (" << storage_data << ") PyObject was alive, incrementing" << std::endl;
+         Py_INCREF(obj);
+         return obj;
+       }
+     }
++    std::cout << FILE_AND_LINE() << " (" << storage_data << ") PyObject is null" << std::endl;
+     status = c10::impl::PyInterpreterStatus::TAGGED_BY_US;
+   } else {
++    std::cout << FILE_AND_LINE() << " (" << storage_data << ") PyObjectSlot is empty, use_count:" << storage.use_count() << std::endl;
+     if (storage.use_count() <= 1) {
++      std::cout << FILE_AND_LINE() << " (" << storage_data << ") definitely uninitialized" << std::endl;
+       status = c10::impl::PyInterpreterStatus::DEFINITELY_UNINITIALIZED;
+     } else {
++      std::cout << FILE_AND_LINE() << " (" << storage_data << ") maybe uninitialized" << std::endl;
+       status = c10::impl::PyInterpreterStatus::MAYBE_UNINITIALIZED;
+     }
+   }
+@@ -133,30 +169,65 @@ PyObject* THPStorage_Wrap(c10::Storage storage) {
+ }
+ 
+ static bool THPStorage_isPreservable(THPStorage* self) {
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ", interpreter: " << getPyInterpreter() << ") in THPStorage_isPreservable" << std::endl;
+   if (self->cdata.unsafeIsBorrowed()) {
++    std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") is borrowed" << std::endl;
+     return false;
+   }
+   auto const& storage = THPStorage_Unpack(self);
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") c10::Storage data: " << storage.data() << std::endl;
+ 
+   if (storage.unsafeGetStorageImpl()->pyobj_slot()->check_pyobj(
+           getPyInterpreter()) != c10::make_optional((PyObject*)self)) {
++    std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") PyObjectSlot has a different PyObject: " <<
++      storage.unsafeGetStorageImpl()->pyobj_slot()->check_pyobj(getPyInterpreter()).value_or(nullptr) << ", storage.use_count: " << storage.use_count() << std::endl;
+     return false;
+   }
+   if (storage.use_count() <= 1) {
++    std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") storage.use_count: " << storage.use_count() << std::endl;
+     return false;
+   }
+   return true;
+ }
+ 
+ static bool THPStorage_tryPreserve(THPStorage* self) {
+-  const auto& storage = THPStorage_Unpack(self);
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ", interpreter: " << getPyInterpreter() << ") in THPStorage_tryPreserve" << std::endl;
+ 
+   if (!THPStorage_isPreservable(self)) {
+     return false;
+   }
+ 
++  const auto& storage = THPStorage_Unpack(self);
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") preserving PyObject" << std::endl;
++
++
++  const char* type_name = Py_TYPE(self)->tp_name;
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") PyObject type: " << type_name << std::endl;
++  TORCH_CHECK(THPStorage_Check((PyObject*)self), "Expected a storage type, but got ", type_name);
++
++
+   c10::StorageImpl* storage_impl = storage.unsafeGetStorageImpl();
+ 
++  auto maybe_pyobj = storage_impl->pyobj_slot()->check_pyobj(
++      getPyInterpreter());
++  // NOTE: It is possible to just set the PyObjectSlot here, but the point is that
++  // we should have already set PyObjectSlot when the storage PyObject was created.
++  TORCH_INTERNAL_ASSERT(
++    maybe_pyobj.has_value(),
++    "Trying to preserve a Python storage whose PyObjectSlot does not have a PyObject");
++
++  PyObject* pyobj = *maybe_pyobj;
++
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") PyObjectSlot points to PyObject at " << pyobj << std::endl;
++
++  const char* pyobj_type_name = Py_TYPE(pyobj)->tp_name;
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") PyObjectSlot's PyObject type: " << pyobj_type_name << std::endl;
++  TORCH_CHECK(THPStorage_Check(pyobj), "Expected a storage type, but got ", pyobj_type_name);
++
++  TORCH_INTERNAL_ASSERT(
++    (void*)pyobj == (void*)self,
++    "Python storage and the PyObject in the internal PyObjectSlot are not at the same address");
++
+   TORCH_INTERNAL_ASSERT(!storage_impl->pyobj_slot()->owns_pyobj());
+ 
+   storage_impl->pyobj_slot()->set_owns_pyobj(true);
+@@ -167,12 +238,45 @@ static bool THPStorage_tryPreserve(THPStorage* self) {
+ }
+ 
+ static void THPStorage_subclass_dealloc(PyObject* self) {
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ", interpreter: " << getPyInterpreter() << ") in THPStorage_subclass_dealloc" << std::endl;
++
+   THPStorage* _self = (THPStorage*)self;
++  const c10::Storage& storage = THPStorage_Unpack(_self);
++  c10::StorageImpl* storage_impl = storage.unsafeGetStorageImpl();
++  c10::impl::PyObjectSlot* pyobj_slot = storage_impl->pyobj_slot();
++
++  if (c10::impl::HermeticPyObjectTLS::get_state()) {
++    std::cout << FILE_AND_LINE() << " (PyObject: " << self
++      << ") hermetic" << std::endl;
++  }
++
++  if (!_self->cdata.unsafeIsBorrowed()) {
++    if (pyobj_slot->has_pyobj()) {
++      std::cout << FILE_AND_LINE() << " (PyObject: " << self
++        << ") PyObjectSlot has PyObject, interpreter: "
++        << pyobj_slot->pyobj_interpreter()
++        << ", PyObject*: " << pyobj_slot->_unchecked_untagged_pyobj()
++        << std::endl;
++
++      if (pyobj_slot->owns_pyobj()) {
++        std::cout << FILE_AND_LINE() << " (PyObject: " << self
++          << ") PyObjectSlot owns PyObject" << std::endl;
++      } else {
++        std::cout << FILE_AND_LINE() << " (PyObject: " << self
++          << ") PyObjectSlot does not own PyObject" << std::endl;
++      }
++    } else {
++      std::cout << FILE_AND_LINE() << " (PyObject: " << self
++        << ") PyObjectSlot does not have PyObject" << std::endl;
++    }
++  }
+ 
+   if (THPStorage_tryPreserve(_self)) {
+     return;
+   }
+ 
++  std::cout << FILE_AND_LINE() << " (PyObject: " << self << ") deallocating storage PyObject" << std::endl;
++
+   // Some subclass of StorageBase could be GC-tracked objects even
+   // though the base class is not
+   auto* type = Py_TYPE(self);

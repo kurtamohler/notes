@@ -1,0 +1,5 @@
+2023-09-14 12:41:20 INFO [323818:test0.c:22] an info message
+2023-09-14 12:41:20 NOTICE [323818:test0.c:23] a notice message
+2023-09-14 12:41:20 WARN [323818:test0.c:24] a warning message
+2023-09-14 12:41:20 ERROR [323818:test0.c:25] an error message
+2023-09-14 12:41:20 FATAL [323818:test0.c:26] a fatal message

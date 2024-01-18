@@ -3,10 +3,13 @@
 struct BaseClass {
   void func() const;
 
-  virtual void func_impl() const = 0;
+  virtual void other_func() const;
 
 protected:
   void default_func_impl() const;
+
+private:
+  virtual void func_impl() const = 0;
 };
 
 void BaseClass::default_func_impl() const {
@@ -18,8 +21,12 @@ void BaseClass::func() const {
   func_impl();
 }
 
+void BaseClass::other_func() const {
+  std::cout << "in BaseClass::other_func" << std::endl;
+}
 
 struct ChildClass0 : public BaseClass {
+private:
   void func_impl() const final;
 };
 
@@ -30,48 +37,36 @@ void ChildClass0::func_impl() const {
 
 
 struct ChildClass1 : public BaseClass {
-  void func_impl() const final {
-    std::cout << "in ChildClass1::func_impl" << std::endl;
-    //default_func_impl();
-    std::cout << "do stuff" << std::endl;
-  }
-};
-
-struct ChildClassWrapper : public BaseClass {
-  ChildClassWrapper(BaseClass* other) :
-    _other(other) {}
-
-  void func_impl() const final {
-    std::cout << "in ChildClassWrapper::func_impl" << std::endl;
-    _other->func_impl();
+  void other_func() const override {
+    std::cout << "in ChildClass1::other_func" << std::endl;
   }
 
 private:
-  BaseClass* _other;
+  void func_impl() const final {
+    std::cout << "in ChildClass1::func_impl" << std::endl;
+    default_func_impl();
+  }
 };
 
 int main() {
   ChildClass0 a;
-
+  BaseClass* a_ptr = reinterpret_cast<BaseClass*>(&a);
   std::cout << "-------------" << std::endl;
   a.func();
+  a.other_func();
 
   std::cout << "-------------" << std::endl;
-  reinterpret_cast<BaseClass*>(&a)->func();
+  a_ptr->func();
+  a_ptr->other_func();
 
   ChildClass1 b;
+  BaseClass* b_ptr = reinterpret_cast<BaseClass*>(&b);
 
   std::cout << "-------------" << std::endl;
   b.func();
+  b.other_func();
 
   std::cout << "-------------" << std::endl;
-  reinterpret_cast<BaseClass*>(&b)->func();
-
-  std::cout << "-------------" << std::endl;
-  ChildClassWrapper a_wrap(&a);
-  a.func();
-
-  std::cout << "-------------" << std::endl;
-  ChildClassWrapper b_wrap(&b);
-  b.func();
+  b_ptr->func();
+  b_ptr->other_func();
 }

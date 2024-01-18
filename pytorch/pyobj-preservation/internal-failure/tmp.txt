@@ -1,0 +1,61 @@
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/autograd/generated/python_variable_methods.cpp:1498] (tensor PyObject: 0x7f8144a0c1d0) in THPVariable_storage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/autograd/generated/python_variable_methods.cpp:1504] (tensor PyObject: 0x7f8144a0c1d0) storage data: 0x557c2137eec0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/DynamicTypes.cpp:64] (0x557c2137eec0, interpreter: 0x557c1f4f4db0) in createPyObject
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:107] (0x557c2137eec0, interpreter: 0x557c1f4f4db0) in THPStorage_Wrap
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:159] (0x557c2137eec0) PyObjectSlot is empty, use_count:2
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:164] (0x557c2137eec0) maybe uninitialized
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:43] (0x557c2137eec0, interpreter: 0x557c1f4f4db0) in THPStorage_NewWithStorage, arg type->tp_name: torch.storage.UntypedStorage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:80] (0x557c2137eec0), creating PyObject of type torch.storage.UntypedStorage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:84] (0x557c2137eec0), created storage PyObject of type torch.storage.UntypedStorage at 0x7f7eb5e9aa40
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:93] (0x557c2137eec0), not hermetic
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/DynamicTypes.cpp:79] (0x557c2137eec0) type_name: torch.storage.UntypedStorage, PyObject*: 0x7f7eb5e9aa40
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:241] (PyObject: 0x7f7eb5e9aa40, interpreter: 0x557c1f4f4db0) in THPStorage_subclass_dealloc
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:255] (PyObject: 0x7f7eb5e9aa40) PyObjectSlot has PyObject, interpreter: 0x557c1f4f4db0, PyObject*: 0x7f7eb5e9aa40
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:265] (PyObject: 0x7f7eb5e9aa40) PyObjectSlot does not own PyObject
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:194] (PyObject: 0x7f7eb5e9aa40, interpreter: 0x557c1f4f4db0) in THPStorage_tryPreserve
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:172] (PyObject: 0x7f7eb5e9aa40, interpreter: 0x557c1f4f4db0) in THPStorage_isPreservable
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:178] (PyObject: 0x7f7eb5e9aa40) c10::Storage data: 0x557c2137eec0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:201] (PyObject: 0x7f7eb5e9aa40) preserving PyObject
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:205] (PyObject: 0x7f7eb5e9aa40) PyObject type: torch.storage.UntypedStorage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:221] (PyObject: 0x7f7eb5e9aa40) PyObjectSlot points to PyObject at 0x7f7eb5e9aa40
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:224] (PyObject: 0x7f7eb5e9aa40) PyObjectSlot's PyObject type: torch.storage.UntypedStorage
+calling func0
+in func0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:43] (0, interpreter: 0x557c1f4f4db0) in THPStorage_NewWithStorage, arg type->tp_name: torch.storage.UntypedStorage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:80] (0), creating PyObject of type torch.storage.UntypedStorage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:84] (0), created storage PyObject of type torch.storage.UntypedStorage at 0x7f7eb5e9acc0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:98] (0), hermetic
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:241] (PyObject: 0x7f7eb5e9aa40, interpreter: 0x557c1f4f4db0) in THPStorage_subclass_dealloc
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:249] (PyObject: 0x7f7eb5e9aa40) hermetic
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:194] (PyObject: 0x7f7eb5e9aa40, interpreter: 0x557c1f4f4db0) in THPStorage_tryPreserve
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:172] (PyObject: 0x7f7eb5e9aa40, interpreter: 0x557c1f4f4db0) in THPStorage_isPreservable
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:174] (PyObject: 0x7f7eb5e9aa40) is borrowed
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:278] (PyObject: 0x7f7eb5e9aa40) deallocating storage PyObject
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:241] (PyObject: 0x7f7eb5e9acc0, interpreter: 0x557c1f4f4db0) in THPStorage_subclass_dealloc
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:249] (PyObject: 0x7f7eb5e9acc0) hermetic
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:269] (PyObject: 0x7f7eb5e9acc0) PyObjectSlot does not have PyObject
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:194] (PyObject: 0x7f7eb5e9acc0, interpreter: 0x557c1f4f4db0) in THPStorage_tryPreserve
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:172] (PyObject: 0x7f7eb5e9acc0, interpreter: 0x557c1f4f4db0) in THPStorage_isPreservable
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:178] (PyObject: 0x7f7eb5e9acc0) c10::Storage data: 0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:182] (PyObject: 0x7f7eb5e9acc0) PyObjectSlot has a different PyObject: 0, storage.use_count: 2
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:278] (PyObject: 0x7f7eb5e9acc0) deallocating storage PyObject
+after func0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/autograd/generated/python_variable_methods.cpp:1498] (tensor PyObject: 0x7f8144a0c1d0) in THPVariable_storage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/autograd/generated/python_variable_methods.cpp:1504] (tensor PyObject: 0x7f8144a0c1d0) storage data: 0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/DynamicTypes.cpp:64] (0, interpreter: 0x557c1f4f4db0) in createPyObject
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:107] (0, interpreter: 0x557c1f4f4db0) in THPStorage_Wrap
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:159] (0) PyObjectSlot is empty, use_count:2
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:164] (0) maybe uninitialized
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:43] (0, interpreter: 0x557c1f4f4db0) in THPStorage_NewWithStorage, arg type->tp_name: torch.storage.UntypedStorage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:80] (0), creating PyObject of type torch.storage.UntypedStorage
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:84] (0), created storage PyObject of type torch.storage.UntypedStorage at 0x7f7eb5e9acc0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:93] (0), not hermetic
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/DynamicTypes.cpp:79] (0) type_name: torch.storage.UntypedStorage, PyObject*: 0x7f7eb5e9acc0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:241] (PyObject: 0x7f7eb5e9acc0, interpreter: 0x557c1f4f4db0) in THPStorage_subclass_dealloc
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:255] (PyObject: 0x7f7eb5e9acc0) PyObjectSlot has PyObject, interpreter: 0x557c1f4f4db0, PyObject*: 0x7f7eb5e9acc0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:265] (PyObject: 0x7f7eb5e9acc0) PyObjectSlot does not own PyObject
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:194] (PyObject: 0x7f7eb5e9acc0, interpreter: 0x557c1f4f4db0) in THPStorage_tryPreserve
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:172] (PyObject: 0x7f7eb5e9acc0, interpreter: 0x557c1f4f4db0) in THPStorage_isPreservable
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:178] (PyObject: 0x7f7eb5e9acc0) c10::Storage data: 0
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:187] (PyObject: 0x7f7eb5e9acc0) storage.use_count: 1
+[/home/kurtamohler/develop/pytorch-0/torch/csrc/Storage.cpp:278] (PyObject: 0x7f7eb5e9acc0) deallocating storage PyObject

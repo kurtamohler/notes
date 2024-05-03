@@ -1,3 +1,4 @@
+#include <functional>
 #include <ios>
 #include <memory>
 #include <iostream>
@@ -15,6 +16,28 @@
 //  * Add a COW simulation state machine as a member of StorageImpl,
 //    like https://github.com/pytorch/pytorch/pull/97175
 namespace COWSim {
+struct WarnCounter {
+  uint8_t count = 0;
+  void increment() { ++count; }
+  void reset() { count =0; }
+};
+
+WarnCounter &get_warn_counter() {
+  static WarnCounter warn_counter;
+  return warn_counter;
+}
+
+void reset_warn_counter() {
+  get_warn_counter().reset();
+}
+
+void check_warn_counter(uint8_t expected_count) {
+  if (expected_count == get_warn_counter().count) {
+    std::cout << "yay.\n";
+  } else {
+    std::cout << "BOO.\n";
+  }
+}
 
 using TokenType = std::uintptr_t;
 //This could also populate a shared registry with extra info about "who" this
@@ -62,7 +85,10 @@ struct COWChecker {
       //Check that we have been subsequently hit with a reason to materialize
       if (token_set(first_writer_))
         // issue warning
-        if (first_writer_ != other) {std::cout << "COW BEHAVIOR WARNING: " << msg << std::endl;}
+        if (first_writer_ != other) {
+          get_warn_counter().increment();
+          std::cout << "COW BEHAVIOR WARNING: " << msg << std::endl;
+        }
     }
   }
 
@@ -212,62 +238,95 @@ TensorImpl reshape(TensorImpl self, ReshapeArgs args) {
 }
 }
 
+// for easy to read examples
+auto tensor() { return TensorImpl(); }
+using torch::view;
+using torch::reshape;
+auto mutates_input(TensorImpl& t) { return t.mutable_data(); }
+auto reads_from_input(TensorImpl& t) {return t.const_data();}
 using torch::ReshapeArgs;
-void example_1() {
-  // a = tensor()
-  // b = a.reshape(args producing view)
-  // mutates_input(a)
-  // reads_from_input(b)
-  std::cout << "START EXAMPLE 1" << std::endl;
-  TensorImpl a;
-  TensorImpl b = torch::reshape(a, ReshapeArgs::View);
-  a.mutable_data();
-  b.const_data();
-  std::cout << "END example 1: expect 1 warning" << std::endl;
+
+auto example_1() {
+  auto a = tensor();
+  auto b = reshape(a, ReshapeArgs::View);
+  mutates_input(a);
+  reads_from_input(b);
 }
 
-void example_2() {
-  // a = tensor()
-  // c = empty_like(a)
-  // c.set_(a.untyped_storage())
-  // b = a.reshape(args producing view)
-  // mutates_input(b)
-  // reads_from_input(c)  # this needs to warn
-
-  std::cout << "START EXAMPLE 2" << std::endl;
-  TensorImpl a;
-  TensorImpl c;
-  // simulate c.set_
+auto example_2() {
+  auto a = tensor();
+  auto c = tensor();
   c.storage() = a.storage();
-  TensorImpl b = torch::reshape(a, ReshapeArgs::View);
-  b.mutable_data();
-  c.const_data();
-  std::cout << "END example 2: expect 1 warning" << std::endl;
-
+  auto b = reshape(a, ReshapeArgs::View);
+  mutates_input(b);
+  reads_from_input(c);
 }
 
-void example_3() {
-  std::cout << "START EXAMPLE 3" << std::endl;
-  TensorImpl a;
-  TensorImpl b = torch::view(a);
-  a.mutable_data();
-  b.mutable_data();
-  a.const_data();
-  b.const_data();
-  std::cout << "END example 3: expect 0 warning" << std::endl;
+auto example_3() {
+    TensorImpl a;
+    TensorImpl b = view(a);
+    mutates_input(a);
+    mutates_input(b);
+    reads_from_input(a);
+    reads_from_input(b);
 }
+
+auto example_4() {
+  auto a = tensor();
+  auto b = view(a);
+  auto c = reshape(b, ReshapeArgs::View);
+  mutates_input(b);
+  reads_from_input(a);
+}
+
+auto example_5() {
+  auto a = tensor();
+  auto b = reshape(a, ReshapeArgs::View);
+  auto c = view(b);
+  mutates_input(b);
+  reads_from_input(a);
+}
+
+auto example_6() {
+  auto a = tensor();
+  auto b = reshape(a, ReshapeArgs::View);
+  auto c = view(b);
+  mutates_input(c);
+  reads_from_input(b);
+}
+
+using func_t = decltype(&example_1);
+static std::pair<func_t, uint8_t> test_cases[] = {
+    {&example_1, 1},
+    {&example_2, 1},
+    {&example_3, 0},
+    {&example_4, 0},
+    {&example_5, 0},
+    {&example_6, 0},
+};
+
+
 
 int main() {
+  auto i = 0;
+  for (auto [func, expected_warns] : test_cases) {
+    ++i;
+    COWSim::get_warn_counter().reset();
+    func();
+    std::cout << "Example " << i << "-->";
+    COWSim::check_warn_counter(expected_warns);
+  }
 
-  std::cout << "--------------------------------------------------------------------\n";
-  example_1();
-  std::cout << "--------------------------------------------------------------------\n";
-  std::cout << "--------------------------------------------------------------------\n";
-  example_2();
-  std::cout << "--------------------------------------------------------------------\n";
-  std::cout << "--------------------------------------------------------------------\n";
-  example_3();
-  std::cout << "--------------------------------------------------------------------\n";
-  TensorImpl a;
-  TensorImpl b;
+
+  // std::cout << "--------------------------------------------------------------------\n";
+  // example_1();
+  // std::cout << "--------------------------------------------------------------------\n";
+  // std::cout << "--------------------------------------------------------------------\n";
+  // example_2();
+  // std::cout << "--------------------------------------------------------------------\n";
+  // std::cout << "--------------------------------------------------------------------\n";
+  // example_3();
+  // std::cout << "--------------------------------------------------------------------\n";
+  // TensorImpl a;
+  // TensorImpl b;
 }
